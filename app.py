@@ -188,10 +188,21 @@ def merge_subtitles():
         )
 
         if result['success']:
-            # Log l'activite
+            # Recuperer les noms de fichiers originaux
+            if 'video' in request.files:
+                file1_name = secure_filename(request.files['video'].filename)
+                file2_name = file1_name
+            else:
+                file1_name = secure_filename(request.files['srt1'].filename)
+                file2_name = secure_filename(request.files['srt2'].filename)
+
+            # Log l'activite avec les noms de fichiers
             log_activity('merge', {
                 'cue_count': result['cue_count'],
-                'mode': mode
+                'mode': mode,
+                'file1': file1_name,
+                'file2': file2_name,
+                'output_file': output_filename
             }, request.remote_addr)
 
             return jsonify({
@@ -340,6 +351,48 @@ def admin_activity():
 
     logs = get_activity_logs(100)
     return render_template('admin_activity.html', logs=logs)
+
+
+@app.route('/admin/download/<filename>')
+def admin_download(filename):
+    """Telecharge un fichier depuis l'admin"""
+    if not session.get('admin_logged_in', False):
+        return redirect(url_for('admin'))
+
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(filename))
+
+        if not os.path.exists(filepath):
+            return "Fichier introuvable", 404
+
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='text/plain'
+        )
+    except Exception as e:
+        return f"Erreur: {str(e)}", 500
+
+
+@app.route('/admin/view/<filename>')
+def admin_view(filename):
+    """Affiche le contenu d'un fichier SRT"""
+    if not session.get('admin_logged_in', False):
+        return redirect(url_for('admin'))
+
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(filename))
+
+        if not os.path.exists(filepath):
+            return "Fichier introuvable", 404
+
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+
+        return render_template('admin_view_file.html', filename=filename, content=content)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 500
 
 
 @app.route('/admin/settings', methods=['GET', 'POST'])

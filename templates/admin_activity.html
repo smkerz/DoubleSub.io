@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .admin-container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -39,9 +39,6 @@
             overflow: hidden;
         }
         .activity-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding: 15px 20px;
             border-bottom: 1px solid var(--border);
         }
@@ -50,6 +47,11 @@
         }
         .activity-item:hover {
             background: rgba(99, 102, 241, 0.05);
+        }
+        .activity-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
         .activity-info {
             flex: 1;
@@ -81,6 +83,54 @@
             font-size: 0.75rem;
             font-family: monospace;
         }
+        .activity-files {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+        .file-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+        .file-label {
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        .file-name {
+            color: var(--text-primary);
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .btn-view {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-view:hover {
+            background: var(--primary-dark);
+        }
+        .btn-dl {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-dl:hover {
+            border-color: var(--primary);
+        }
         .empty-state {
             padding: 50px;
             text-align: center;
@@ -106,6 +156,18 @@
         .stat-label {
             color: var(--text-secondary);
             font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            .file-row {
+                flex-wrap: wrap;
+            }
+            .file-actions {
+                margin-left: 0;
+                margin-top: 5px;
+            }
+            .stats-row {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -138,28 +200,53 @@
             {% if logs %}
                 {% for log in logs %}
                 <div class="activity-item">
-                    <div class="activity-info">
-                        <div class="activity-action {{ log.action }}">
-                            {% if log.action == 'merge' %}
-                                Fusion de sous-titres
-                            {% elif log.action == 'email_signup' %}
-                                Inscription email
-                            {% else %}
-                                {{ log.action }}
-                            {% endif %}
+                    <div class="activity-row">
+                        <div class="activity-info">
+                            <div class="activity-action {{ log.action }}">
+                                {% if log.action == 'merge' %}
+                                    Fusion de sous-titres
+                                {% elif log.action == 'email_signup' %}
+                                    Inscription email
+                                {% else %}
+                                    {{ log.action }}
+                                {% endif %}
+                            </div>
+                            <div class="activity-details">
+                                {% if log.action == 'merge' %}
+                                    {{ log.details.cue_count }} sous-titres (mode: {{ log.details.mode }})
+                                {% elif log.action == 'email_signup' %}
+                                    {{ log.details.email }}
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="activity-details">
-                            {% if log.action == 'merge' %}
-                                {{ log.details.cue_count }} sous-titres (mode: {{ log.details.mode }})
-                            {% elif log.action == 'email_signup' %}
-                                {{ log.details.email }}
-                            {% endif %}
+                        <div class="activity-meta">
+                            <div class="activity-time">{{ log.timestamp }}</div>
+                            <div class="activity-ip">{{ log.ip }}</div>
                         </div>
                     </div>
-                    <div class="activity-meta">
-                        <div class="activity-time">{{ log.timestamp }}</div>
-                        <div class="activity-ip">{{ log.ip }}</div>
+
+                    {% if log.action == 'merge' and log.details.file1 %}
+                    <div class="activity-files">
+                        <div class="file-row">
+                            <span class="file-label">Fichier 1:</span>
+                            <span class="file-name">{{ log.details.file1 }}</span>
+                        </div>
+                        <div class="file-row">
+                            <span class="file-label">Fichier 2:</span>
+                            <span class="file-name">{{ log.details.file2 }}</span>
+                        </div>
+                        {% if log.details.output_file %}
+                        <div class="file-row">
+                            <span class="file-label">Resultat:</span>
+                            <span class="file-name">{{ log.details.output_file }}</span>
+                            <div class="file-actions">
+                                <a href="{{ url_for('admin_view', filename=log.details.output_file) }}" class="btn-small btn-view">Voir</a>
+                                <a href="{{ url_for('admin_download', filename=log.details.output_file) }}" class="btn-small btn-dl">DL</a>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             {% else %}

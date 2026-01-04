@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ filename }} - DoubleSub.io Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .admin-header h1 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            word-break: break-all;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-back {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-back:hover {
+            border-color: var(--primary);
+        }
+        .btn-download {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-download:hover {
+            background: #059669;
+        }
+        .file-content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .file-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .file-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>{{ filename }}</h1>
+            <div class="header-buttons">
+                <a href="{{ url_for('admin_download', filename=filename) }}" class="btn-download">Telecharger</a>
+                <a href="{{ url_for('admin_activity') }}" class="btn-back">Retour</a>
+            </div>
+        </div>
+
+        <div class="file-info">
+            Taille: {{ content|length }} caracteres
+        </div>
+
+        <div class="file-content">
+            <pre>{{ content }}</pre>
+        </div>
+    </div>
+</body>
+</html>
