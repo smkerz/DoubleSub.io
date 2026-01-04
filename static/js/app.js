@@ -10,10 +10,14 @@ const state = {
     }
 };
 
+// Config
+const MAX_SRT_SIZE = 2 * 1024 * 1024; // 2 MB max pour les fichiers SRT
+
 // Translations for dynamic content
 const translations = {
     en: {
         errorInvalidFormat: 'Unsupported subtitle format. Use: SRT, ASS, SSA',
+        errorFileTooLarge: 'File too large. Maximum size: 2 MB',
         processing: 'Processing...',
         mergeSuccess: '{count} subtitles merged successfully!',
         errorMerge: 'Error during merge',
@@ -22,6 +26,7 @@ const translations = {
     },
     fr: {
         errorInvalidFormat: 'Format de sous-titre non supporte. Utilisez: SRT, ASS, SSA',
+        errorFileTooLarge: 'Fichier trop volumineux. Taille maximum: 2 MB',
         processing: 'Traitement en cours...',
         mergeSuccess: '{count} sous-titres fusionnes avec succes!',
         errorMerge: 'Erreur lors de la fusion',
@@ -130,11 +135,17 @@ function setupDropZone(zoneId, inputId, fileType) {
 function handleFile(file, fileType) {
     console.log(`File uploaded: ${file.name} (${fileType})`);
 
-    // Validate file
+    // Validate file extension
     const validExtensions = ['srt', 'ass', 'ssa'];
     const ext = file.name.split('.').pop().toLowerCase();
     if (!validExtensions.includes(ext)) {
         showError(t('errorInvalidFormat'));
+        return;
+    }
+
+    // Validate file size (max 2 MB)
+    if (file.size > MAX_SRT_SIZE) {
+        showError(t('errorFileTooLarge'));
         return;
     }
 
