@@ -48,3 +48,4 @@ ffmpeg_temp.zip
 # Admin data (sensitive)
 admin_credentials.json
 emails_notify.txt
+activity_log.json

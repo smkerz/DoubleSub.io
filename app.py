@@ -4,10 +4,47 @@ DoubleSub.io - Application Flask principale
 
 import os
 import json
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for, Response
 from werkzeug.utils import secure_filename
 from functools import wraps
 from config import Config
+
+# Activity log file
+ACTIVITY_LOG_FILE = os.path.join(os.path.dirname(__file__), 'activity_log.json')
+
+
+def log_activity(action, details=None, ip=None):
+    """Log une activite utilisateur"""
+    try:
+        logs = []
+        if os.path.exists(ACTIVITY_LOG_FILE):
+            with open(ACTIVITY_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+
+        log_entry = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'action': action,
+            'details': details or {},
+            'ip': ip or 'unknown'
+        }
+
+        logs.insert(0, log_entry)  # Plus recent en premier
+        logs = logs[:500]  # Garder les 500 derniers
+
+        with open(ACTIVITY_LOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Erreur log: {e}")
+
+
+def get_activity_logs(limit=100):
+    """Recupere les logs d'activite"""
+    if os.path.exists(ACTIVITY_LOG_FILE):
+        with open(ACTIVITY_LOG_FILE, 'r', encoding='utf-8') as f:
+            logs = json.load(f)
+        return logs[:limit]
+    return []
 
 # Admin credentials (default, will be overridden by file if exists)
 DEFAULT_ADMIN_USERNAME = 'apps@mcdavidian'
@@ -151,6 +188,12 @@ def merge_subtitles():
         )
 
         if result['success']:
+            # Log l'activite
+            log_activity('merge', {
+                'cue_count': result['cue_count'],
+                'mode': mode
+            }, request.remote_addr)
+
             return jsonify({
                 'success': True,
                 'message': 'Fusion réussie!',
@@ -210,6 +253,9 @@ def notify_signup():
 
         with open(emails_file, 'a', encoding='utf-8') as f:
             f.write(email + '\n')
+
+        # Log l'activite
+        log_activity('email_signup', {'email': email}, request.remote_addr)
 
         app.logger.info(f"Nouvel email enregistre: {email}")
 
@@ -284,6 +330,16 @@ def admin_export():
         mimetype='text/csv',
         headers={'Content-Disposition': 'attachment; filename=doublesub_emails.csv'}
     )
+
+
+@app.route('/admin/activity')
+def admin_activity():
+    """Page historique des activites"""
+    if not session.get('admin_logged_in', False):
+        return redirect(url_for('admin'))
+
+    logs = get_activity_logs(100)
+    return render_template('admin_activity.html', logs=logs)
 
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
