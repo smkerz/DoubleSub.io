@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoubleSub.io - Bilingual Subtitle Merger</title>
+    <meta name="description" content="Merge your subtitles in dual-language for optimal language learning">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Language Banner -->
+    <div class="lang-banner">
+        <div class="lang-container">
+            <span class="lang-label" data-en="Language:" data-fr="Langue:">Language:</span>
+            <button class="lang-btn active" data-lang="en">English</button>
+            <button class="lang-btn" data-lang="fr">Francais</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>DoubleSub<span>.io</span></h1>
+            </div>
+            <p class="tagline" data-en="Merge your subtitles in dual-language" data-fr="Fusionnez vos sous-titres en dual-langue">Merge your subtitles in dual-language</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- SRT Upload Mode -->
+            <div id="srtMode" class="upload-mode active">
+                <div class="card">
+                    <h2 data-en="Upload your SRT files" data-fr="Upload vos fichiers SRT">Upload your SRT files</h2>
+                    <p class="help-text" data-en="Choose 2 subtitle files to merge" data-fr="Choisissez 2 fichiers de sous-titres a fusionner">Choose 2 subtitle files to merge</p>
+
+                    <div class="srt-uploads">
+                        <!-- Subtitle 1 -->
+                        <div class="srt-upload-group">
+                            <label class="srt-label primary">
+                                <span class="label-icon">^</span>
+                                <span data-en="TOP subtitle (language 1)" data-fr="Sous-titre HAUT (langue 1)">TOP subtitle (language 1)</span>
+                            </label>
+                            <div class="upload-zone small" id="srt1DropZone">
+                                <input type="file" id="srt1File" accept=".srt,.ass,.ssa" hidden>
+                                <div class="upload-content">
+                                    <div class="upload-icon small">+</div>
+                                    <p class="upload-text" data-en="Drag SRT file 1 here" data-fr="Glissez le fichier SRT 1">Drag SRT file 1 here</p>
+                                    <p class="upload-subtext" data-en="or click to browse" data-fr="ou cliquez pour parcourir">or click to browse</p>
+                                </div>
+                            </div>
+                            <div id="srt1Info" class="file-info hidden">
+                                <div class="file-name"></div>
+                                <button class="btn-remove small" onclick="removeFile('srt1')">X</button>
+                            </div>
+                        </div>
+
+                        <!-- Subtitle 2 -->
+                        <div class="srt-upload-group">
+                            <label class="srt-label secondary">
+                                <span class="label-icon">v</span>
+                                <span data-en="BOTTOM subtitle (language 2)" data-fr="Sous-titre BAS (langue 2)">BOTTOM subtitle (language 2)</span>
+                            </label>
+                            <div class="upload-zone small" id="srt2DropZone">
+                                <input type="file" id="srt2File" accept=".srt,.ass,.ssa" hidden>
+                                <div class="upload-content">
+                                    <div class="upload-icon small">+</div>
+                                    <p class="upload-text" data-en="Drag SRT file 2 here" data-fr="Glissez le fichier SRT 2">Drag SRT file 2 here</p>
+                                    <p class="upload-subtext" data-en="or click to browse" data-fr="ou cliquez pour parcourir">or click to browse</p>
+                                </div>
+                            </div>
+                            <div id="srt2Info" class="file-info hidden">
+                                <div class="file-name"></div>
+                                <button class="btn-remove small" onclick="removeFile('srt2')">X</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div id="optionsCard" class="card options-card hidden">
+                <h3 data-en="Merge options" data-fr="Options de fusion">Merge options</h3>
+                <div class="options-grid">
+                    <div class="option-group">
+                        <label for="mergeMode" data-en="Merge mode:" data-fr="Mode de fusion:">Merge mode:</label>
+                        <select id="mergeMode" class="input-select">
+                            <option value="all" data-en="All subtitles" data-fr="Tous les sous-titres">All subtitles</option>
+                            <option value="overlapping" data-en="Overlapping only" data-fr="Chevauchements uniquement">Overlapping only</option>
+                            <option value="primary" data-en="Priority language 1" data-fr="Priorite langue 1">Priority language 1</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label for="tolerance" data-en="Tolerance (ms):" data-fr="Tolerance (ms):">Tolerance (ms):</label>
+                        <input type="number" id="tolerance" class="input-number" value="700" min="0" max="5000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div id="actionSection" class="action-section hidden">
+                <button id="mergeBtn" class="btn-primary">
+                    <span class="btn-icon">~</span>
+                    <span data-en="Merge subtitles" data-fr="Fusionner les sous-titres">Merge subtitles</span>
+                </button>
+            </div>
+
+            <!-- Progress -->
+            <div id="progressSection" class="progress-section hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text" data-en="Processing..." data-fr="Traitement en cours...">Processing...</p>
+            </div>
+
+            <!-- Result -->
+            <div id="resultSection" class="result-section hidden">
+                <div class="result-card success">
+                    <div class="result-icon">OK</div>
+                    <h3 data-en="Merge successful!" data-fr="Fusion reussie !">Merge successful!</h3>
+                    <p class="result-message"></p>
+                    <button id="downloadBtn" class="btn-download">
+                        <span data-en="Download SRT file" data-fr="Telecharger le fichier SRT">Download SRT file</span>
+                    </button>
+                    <button class="btn-secondary" onclick="location.reload()">
+                        <span data-en="New file" data-fr="Nouveau fichier">New file</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div id="errorSection" class="result-section hidden">
+                <div class="result-card error">
+                    <div class="result-icon">X</div>
+                    <h3 data-en="Error" data-fr="Erreur">Error</h3>
+                    <p class="error-message"></p>
+                    <button class="btn-secondary" onclick="location.reload()">
+                        <span data-en="Try again" data-fr="Reessayer">Try again</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coming Soon: Video Upload -->
+            <div class="card coming-soon-card">
+                <div class="coming-soon-badge" data-en="Coming soon" data-fr="Bientot disponible">Coming soon</div>
+                <h3 data-en="Video Upload" data-fr="Upload Video">Video Upload</h3>
+                <p class="help-text" data-en="Soon, you'll be able to upload your videos directly and we'll automatically extract the subtitles to merge them." data-fr="Bientot, vous pourrez uploader directement vos videos et nous extrairons automatiquement les sous-titres pour les fusionner.">
+                    Soon, you'll be able to upload your videos directly and we'll automatically extract the subtitles to merge them.
+                </p>
+                <p class="help-text" data-en="Interested? Leave your email to be notified at launch:" data-fr="Interesse? Laissez votre email pour etre notifie du lancement:">
+                    Interested? Leave your email to be notified at launch:
+                </p>
+                <form id="notifyForm" class="notify-form">
+                    <div class="notify-input-group">
+                        <input type="email" id="notifyEmail" placeholder="your@email.com" required>
+                        <button type="submit" class="btn-notify" data-en="Notify me" data-fr="Me notifier">Notify me</button>
+                    </div>
+                </form>
+                <div id="notifySuccess" class="notify-success hidden" data-en="Thank you! We'll contact you at launch." data-fr="Merci ! Nous vous contacterons lors du lancement.">
+                    Thank you! We'll contact you at launch.
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>2026 DoubleSub.io - <span data-en="Language learning through cinema" data-fr="Apprentissage des langues par le cinema">Language learning through cinema</span></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

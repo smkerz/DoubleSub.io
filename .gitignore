@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+.webassets-cache
+
+# Uploads
+uploads/
+*.srt
+*.mp4
+*.mkv
+*.avi
+*.mov
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# FFmpeg local (downloaded)
+ffmpeg/
+ffmpeg_temp.zip
+
+# Admin data (sensitive)
+admin_credentials.json
+emails_notify.txt

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parametres - DoubleSub.io Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .admin-header h1 {
+            color: var(--primary);
+        }
+        .btn-back {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-back:hover {
+            border-color: var(--primary);
+        }
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .form-group input {
+            padding: 12px 18px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .form-group small {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .btn-save {
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Parametres</h1>
+            <a href="{{ url_for('admin') }}" class="btn-back">Retour</a>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+        {% if success_msg %}
+        <div class="alert alert-success">{{ success_msg }}</div>
+        {% endif %}
+
+        <div class="card">
+            <h3>Modifier les identifiants</h3>
+            <form method="POST" class="settings-form">
+                <div class="form-group">
+                    <label>Nom d'utilisateur</label>
+                    <input type="text" name="new_username" value="{{ current_username }}" required>
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-group">
+                    <label>Nouveau mot de passe</label>
+                    <input type="password" name="new_password" placeholder="Laisser vide pour garder l'actuel">
+                    <small>Laissez vide si vous ne souhaitez pas changer le mot de passe</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirmer le nouveau mot de passe</label>
+                    <input type="password" name="confirm_password" placeholder="Confirmer le nouveau mot de passe">
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-group">
+                    <label>Mot de passe actuel (requis)</label>
+                    <input type="password" name="current_password" placeholder="Entrez votre mot de passe actuel" required>
+                    <small>Pour des raisons de securite, entrez votre mot de passe actuel</small>
+                </div>
+
+                <button type="submit" class="btn-save">Sauvegarder les modifications</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
