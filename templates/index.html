@@ -29,6 +29,15 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle-card">
+                <label class="mode-toggle">
+                    <input type="checkbox" id="batchModeToggle">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label" data-en="Batch mode" data-fr="Mode lot">Batch mode</span>
+                </label>
+            </div>
+
             <!-- SRT Upload Mode -->
             <div id="srtMode" class="upload-mode active">
                 <div class="card">
@@ -79,6 +88,39 @@
                 </div>
             </div>
 
+            <!-- Batch Mode Section -->
+            <div id="batchSection" class="card hidden">
+                <h2 data-en="Batch merge" data-fr="Fusion en lot">Batch merge</h2>
+                <p class="help-text" data-en="Select multiple SRT files. They will be paired in alphabetical order (file1+file2, file3+file4, etc.)" data-fr="Selectionnez plusieurs fichiers SRT. Ils seront appaires par ordre alphabetique (fichier1+fichier2, fichier3+fichier4, etc.)">
+                    Select multiple SRT files. They will be paired in alphabetical order (file1+file2, file3+file4, etc.)
+                </p>
+
+                <div class="batch-upload-zone">
+                    <input type="file" id="batchFiles" accept=".srt,.ass,.ssa" multiple hidden>
+                    <button class="btn-batch-upload" onclick="document.getElementById('batchFiles').click()">
+                        <span class="btn-icon">+</span>
+                        <span data-en="Select SRT files" data-fr="Selectionner des fichiers SRT">Select SRT files</span>
+                    </button>
+                </div>
+
+                <div id="batchList" class="batch-list">
+                    <p class="batch-empty" data-en="Select files to create pairs" data-fr="Selectionnez des fichiers pour creer des paires">Select files to create pairs</p>
+                </div>
+
+                <div id="batchOptionsCard" class="batch-options hidden">
+                    <!-- Options will be shared with single mode -->
+                </div>
+
+                <div class="batch-action">
+                    <button id="batchMergeBtn" class="btn-primary" onclick="performBatchMerge()" disabled>
+                        <span class="btn-icon">~</span>
+                        <span data-en="Merge all pairs" data-fr="Fusionner toutes les paires">Merge all pairs</span>
+                    </button>
+                </div>
+
+                <div id="batchResultSection" class="result-section hidden"></div>
+            </div>
+
             <!-- Options -->
             <div id="optionsCard" class="card options-card hidden">
                 <h3 data-en="Merge options" data-fr="Options de fusion">Merge options</h3>
@@ -94,6 +136,40 @@
                     <div class="option-group">
                         <label for="tolerance" data-en="Tolerance (ms):" data-fr="Tolerance (ms):">Tolerance (ms):</label>
                         <input type="number" id="tolerance" class="input-number" value="700" min="0" max="5000">
+                    </div>
+                </div>
+
+                <!-- Time Offset Options -->
+                <h4 class="options-subtitle" data-en="Time offset (ms)" data-fr="Decalage temporel (ms)">Time offset (ms)</h4>
+                <div class="options-grid">
+                    <div class="option-group">
+                        <label for="offset1" data-en="Subtitle 1 offset:" data-fr="Decalage sous-titre 1:">Subtitle 1 offset:</label>
+                        <input type="number" id="offset1" class="input-number" value="0" min="-60000" max="60000" step="100">
+                    </div>
+                    <div class="option-group">
+                        <label for="offset2" data-en="Subtitle 2 offset:" data-fr="Decalage sous-titre 2:">Subtitle 2 offset:</label>
+                        <input type="number" id="offset2" class="input-number" value="0" min="-60000" max="60000" step="100">
+                    </div>
+                </div>
+
+                <!-- Color Options -->
+                <h4 class="options-subtitle" data-en="Subtitle colors" data-fr="Couleurs des sous-titres">Subtitle colors</h4>
+                <div class="options-grid">
+                    <div class="option-group">
+                        <label for="color1" data-en="Subtitle 1 (top):" data-fr="Sous-titre 1 (haut):">Subtitle 1 (top):</label>
+                        <div class="color-input-group">
+                            <input type="color" id="color1" class="input-color" value="#FFFFFF">
+                            <input type="checkbox" id="color1Enabled" class="color-checkbox">
+                            <span class="color-label" data-en="Enable" data-fr="Activer">Enable</span>
+                        </div>
+                    </div>
+                    <div class="option-group">
+                        <label for="color2" data-en="Subtitle 2 (bottom):" data-fr="Sous-titre 2 (bas):">Subtitle 2 (bottom):</label>
+                        <div class="color-input-group">
+                            <input type="color" id="color2" class="input-color" value="#FFFF00">
+                            <input type="checkbox" id="color2Enabled" class="color-checkbox">
+                            <span class="color-label" data-en="Enable" data-fr="Activer">Enable</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -120,12 +196,21 @@
                     <div class="result-icon">OK</div>
                     <h3 data-en="Merge successful!" data-fr="Fusion reussie !">Merge successful!</h3>
                     <p class="result-message"></p>
-                    <button id="downloadBtn" class="btn-download">
-                        <span data-en="Download SRT file" data-fr="Telecharger le fichier SRT">Download SRT file</span>
-                    </button>
-                    <button class="btn-secondary" onclick="location.reload()">
-                        <span data-en="New file" data-fr="Nouveau fichier">New file</span>
-                    </button>
+
+                    <!-- Preview Section -->
+                    <div id="previewSection" class="preview-section">
+                        <h4 data-en="Preview (first 10 subtitles)" data-fr="Apercu (10 premiers sous-titres)">Preview (first 10 subtitles)</h4>
+                        <div id="previewContent" class="preview-content"></div>
+                    </div>
+
+                    <div class="result-buttons">
+                        <button id="downloadBtn" class="btn-download">
+                            <span data-en="Download SRT file" data-fr="Telecharger le fichier SRT">Download SRT file</span>
+                        </button>
+                        <button class="btn-secondary" onclick="location.reload()">
+                            <span data-en="New file" data-fr="Nouveau fichier">New file</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -139,6 +224,15 @@
                         <span data-en="Try again" data-fr="Reessayer">Try again</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="historySection" class="card history-card hidden">
+                <div class="history-header">
+                    <h3 data-en="Recent merges" data-fr="Fusions recentes">Recent merges</h3>
+                    <button class="btn-clear-history" onclick="clearHistory()" data-en="Clear" data-fr="Effacer">Clear</button>
+                </div>
+                <div id="historyList" class="history-list"></div>
             </div>
 
             <!-- Coming Soon: Video Upload -->
@@ -166,6 +260,7 @@
         <!-- Footer -->
         <footer class="footer">
             <p>2026 DoubleSub.io - <span data-en="Language learning through cinema" data-fr="Apprentissage des langues par le cinema">Language learning through cinema</span></p>
+            <p class="footer-api"><a href="/api/v1/docs" data-en="API Documentation" data-fr="Documentation API">API Documentation</a></p>
         </footer>
     </div>
 

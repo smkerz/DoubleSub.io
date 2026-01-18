@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - DoubleSub.io</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .api-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .api-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .api-header h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .api-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .api-section h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .api-section h3 {
+            color: var(--text-primary);
+            margin: 20px 0 10px;
+            font-size: 1.1rem;
+        }
+        .endpoint {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Consolas', monospace;
+        }
+        .method {
+            background: var(--success);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-right: 10px;
+        }
+        .url {
+            color: var(--text-primary);
+        }
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .params-table th,
+        .params-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .params-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .params-table td {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .param-name {
+            font-family: 'Consolas', monospace;
+            color: var(--primary);
+        }
+        .param-required {
+            color: var(--error);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .param-optional {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+        .code-block {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        .code-block .comment {
+            color: var(--text-secondary);
+        }
+        .code-block .string {
+            color: var(--success);
+        }
+        .response-example {
+            margin-top: 10px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        /* API Key styles */
+        .api-key-box {
+            background: var(--bg-dark);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .api-key-box.hidden {
+            display: none;
+        }
+        .api-key-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        .api-key-value {
+            font-family: 'Consolas', monospace;
+            font-size: 1.2rem;
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 12px 15px;
+            border-radius: 8px;
+            word-break: break-all;
+            user-select: all;
+            cursor: pointer;
+        }
+        .api-key-stats {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .api-key-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .api-key-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+        .api-key-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .api-key-warning {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            color: var(--error);
+            font-size: 0.85rem;
+        }
+        #apiKeyActions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            border-color: var(--primary);
+        }
+        .btn-secondary.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="api-container">
+        <a href="/" class="back-link">&larr; Back to DoubleSub.io</a>
+
+        <div class="api-header">
+            <h1>DoubleSub.io API</h1>
+            <p class="tagline">Public REST API for subtitle merging</p>
+        </div>
+
+        <div class="api-section">
+            <h2>Overview</h2>
+            <p>The DoubleSub.io API allows you to programmatically merge two subtitle files into a single bilingual subtitle file. This is useful for building integrations, plugins, or automating subtitle processing.</p>
+            <p style="margin-top: 10px; color: var(--text-secondary);">Base URL: <code>https://doublesub.io</code></p>
+        </div>
+
+        <!-- API Key Section -->
+        <div class="api-section" id="apiKeySection">
+            <h2>API Key</h2>
+            <p>To use the API, you need an API key. Keys are free and anonymous - no account required!</p>
+            <p style="margin-top: 10px; color: var(--text-secondary);">Limit: <strong>50 merges per day</strong> per key.</p>
+
+            <div id="apiKeyDisplay" class="api-key-box hidden">
+                <div class="api-key-label">Your API Key:</div>
+                <div class="api-key-value" id="apiKeyValue"></div>
+                <div class="api-key-stats" id="apiKeyStats"></div>
+                <p class="api-key-warning">Save this key! It cannot be recovered if lost.</p>
+            </div>
+
+            <div id="apiKeyActions">
+                <button id="getKeyBtn" class="btn-primary" onclick="getOrCreateApiKey()">
+                    Get your API key
+                </button>
+                <button id="checkKeyBtn" class="btn-secondary hidden" onclick="checkApiKeyStats()">
+                    Check usage
+                </button>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h2>Merge Subtitles</h2>
+            <div class="endpoint">
+                <span class="method">POST</span>
+                <span class="url">/api/v1/merge</span>
+            </div>
+
+            <h3>Request Parameters</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Content-Type: multipart/form-data</p>
+
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">api_key</span> <span class="param-required">required</span></td>
+                        <td>string</td>
+                        <td>Your API key (also accepted via X-API-Key header)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">srt1</span> <span class="param-required">required</span></td>
+                        <td>file</td>
+                        <td>First subtitle file (SRT format) - displayed on top</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">srt2</span> <span class="param-required">required</span></td>
+                        <td>file</td>
+                        <td>Second subtitle file (SRT format) - displayed on bottom</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">mode</span> <span class="param-optional">optional</span></td>
+                        <td>string</td>
+                        <td>Merge mode: <code>all</code> (default), <code>overlapping</code>, or <code>primary</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">tolerance</span> <span class="param-optional">optional</span></td>
+                        <td>integer</td>
+                        <td>Timing tolerance in milliseconds (default: 700)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">offset1</span> <span class="param-optional">optional</span></td>
+                        <td>integer</td>
+                        <td>Time offset for first subtitle in ms (default: 0)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">offset2</span> <span class="param-optional">optional</span></td>
+                        <td>integer</td>
+                        <td>Time offset for second subtitle in ms (default: 0)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">color1</span> <span class="param-optional">optional</span></td>
+                        <td>string</td>
+                        <td>HTML color for first subtitle (e.g., #FFFFFF)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">color2</span> <span class="param-optional">optional</span></td>
+                        <td>string</td>
+                        <td>HTML color for second subtitle (e.g., #FFFF00)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">format</span> <span class="param-optional">optional</span></td>
+                        <td>string</td>
+                        <td>Response format: <code>file</code> (default) or <code>json</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Example: cURL</h3>
+            <div class="code-block">
+<span class="comment"># Get merged file directly (using header)</span>
+curl -X POST https://doublesub.io/api/v1/merge \
+  -H "X-API-Key: dsub_your_api_key_here" \
+  -F "srt1=@english.srt" \
+  -F "srt2=@french.srt" \
+  -F "mode=all" \
+  --output merged.srt
+
+<span class="comment"># Or pass API key in form data</span>
+curl -X POST https://doublesub.io/api/v1/merge \
+  -F "api_key=dsub_your_api_key_here" \
+  -F "srt1=@english.srt" \
+  -F "srt2=@french.srt" \
+  --output merged.srt
+
+<span class="comment"># Get JSON response</span>
+curl -X POST https://doublesub.io/api/v1/merge \
+  -H "X-API-Key: dsub_your_api_key_here" \
+  -F "srt1=@english.srt" \
+  -F "srt2=@french.srt" \
+  -F "format=json"
+            </div>
+
+            <h3>Example: Python</h3>
+            <div class="code-block">
+import requests
+
+url = <span class="string">"https://doublesub.io/api/v1/merge"</span>
+
+headers = {
+    <span class="string">'X-API-Key'</span>: <span class="string">'dsub_your_api_key_here'</span>
+}
+
+files = {
+    <span class="string">'srt1'</span>: open(<span class="string">'english.srt'</span>, <span class="string">'rb'</span>),
+    <span class="string">'srt2'</span>: open(<span class="string">'french.srt'</span>, <span class="string">'rb'</span>)
+}
+
+data = {
+    <span class="string">'mode'</span>: <span class="string">'all'</span>
+}
+
+response = requests.post(url, headers=headers, files=files, data=data)
+
+with open(<span class="string">'merged.srt'</span>, <span class="string">'wb'</span>) as f:
+    f.write(response.content)
+            </div>
+
+            <h3>Example: C# (for Emby plugin)</h3>
+            <div class="code-block">
+using var client = new HttpClient();
+client.DefaultRequestHeaders.Add(<span class="string">"X-API-Key"</span>, <span class="string">"dsub_your_api_key_here"</span>);
+
+using var form = new MultipartFormDataContent();
+form.Add(new ByteArrayContent(File.ReadAllBytes(<span class="string">"english.srt"</span>)), <span class="string">"srt1"</span>, <span class="string">"english.srt"</span>);
+form.Add(new ByteArrayContent(File.ReadAllBytes(<span class="string">"french.srt"</span>)), <span class="string">"srt2"</span>, <span class="string">"french.srt"</span>);
+form.Add(new StringContent(<span class="string">"all"</span>), <span class="string">"mode"</span>);
+
+var response = await client.PostAsync(<span class="string">"https://doublesub.io/api/v1/merge"</span>, form);
+var mergedSrt = await response.Content.ReadAsByteArrayAsync();
+
+File.WriteAllBytes(<span class="string">"merged.srt"</span>, mergedSrt);
+            </div>
+
+            <h3>Response (format=json)</h3>
+            <div class="code-block response-example">
+{
+    <span class="string">"success"</span>: true,
+    <span class="string">"cue_count"</span>: 1234,
+    <span class="string">"download_url"</span>: <span class="string">"/download/api_merged_123456.srt"</span>,
+    <span class="string">"preview"</span>: [
+        {
+            <span class="string">"index"</span>: 1,
+            <span class="string">"start"</span>: <span class="string">"00:00:01,000"</span>,
+            <span class="string">"end"</span>: <span class="string">"00:00:04,000"</span>,
+            <span class="string">"text"</span>: <span class="string">"Hello\nBonjour"</span>
+        }
+    ]
+}
+            </div>
+
+            <h3>Error Response</h3>
+            <div class="code-block response-example">
+{
+    <span class="string">"success"</span>: false,
+    <span class="string">"error"</span>: <span class="string">"Two SRT files required (srt1 and srt2)"</span>
+}
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h2>Merge Modes</h2>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">all</span></td>
+                        <td>Include all subtitles from both files. Overlapping subtitles are merged together.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">overlapping</span></td>
+                        <td>Only include subtitles that overlap in timing between both files.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">primary</span></td>
+                        <td>Use timing from the first file. Second file subtitles are matched to first file timing.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="api-section">
+            <h2>Rate Limits</h2>
+            <p>Each API key is limited to <strong>50 merges per day</strong>. The limit resets every 24 hours from your first merge.</p>
+            <p style="margin-top: 10px; color: var(--text-secondary);">Need more? Contact us for enterprise solutions or self-host your own instance.</p>
+
+            <h3>Rate Limit Response</h3>
+            <div class="code-block response-example">
+{
+    <span class="string">"success"</span>: false,
+    <span class="string">"error"</span>: <span class="string">"Daily limit exceeded (50 merges/day). Resets in 24h."</span>,
+    <span class="string">"remaining"</span>: 0
+}
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>2026 DoubleSub.io - API v1</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_KEY_STORAGE = 'doublesub_api_key';
+
+        // Check for existing API key on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            if (savedKey) {
+                showExistingKey(savedKey);
+            }
+        });
+
+        async function getOrCreateApiKey() {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+
+            if (savedKey) {
+                // Already have a key, just show it
+                showExistingKey(savedKey);
+                return;
+            }
+
+            // Create new key
+            const btn = document.getElementById('getKeyBtn');
+            btn.textContent = 'Creating...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/v1/key', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Save to localStorage
+                    localStorage.setItem(API_KEY_STORAGE, data.api_key);
+                    showNewKey(data.api_key, data.daily_limit);
+                } else {
+                    alert('Error creating API key: ' + (data.error || 'Unknown error'));
+                    btn.textContent = 'Get your API key';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('Connection error: ' + error.message);
+                btn.textContent = 'Get your API key';
+                btn.disabled = false;
+            }
+        }
+
+        function showNewKey(apiKey, dailyLimit) {
+            document.getElementById('apiKeyValue').textContent = apiKey;
+            document.getElementById('apiKeyStats').innerHTML = `
+                <div class="api-key-stat">
+                    <span class="api-key-stat-value">${dailyLimit}</span>
+                    <span class="api-key-stat-label">Remaining today</span>
+                </div>
+                <div class="api-key-stat">
+                    <span class="api-key-stat-value">0</span>
+                    <span class="api-key-stat-label">Total merges</span>
+                </div>
+            `;
+            document.getElementById('apiKeyDisplay').classList.remove('hidden');
+            document.getElementById('getKeyBtn').classList.add('hidden');
+            document.getElementById('checkKeyBtn').classList.remove('hidden');
+        }
+
+        async function showExistingKey(apiKey) {
+            document.getElementById('apiKeyValue').textContent = apiKey;
+            document.getElementById('apiKeyDisplay').classList.remove('hidden');
+            document.getElementById('getKeyBtn').textContent = 'View your API key';
+            document.getElementById('checkKeyBtn').classList.remove('hidden');
+
+            // Fetch stats
+            await checkApiKeyStats();
+        }
+
+        async function checkApiKeyStats() {
+            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+            if (!apiKey) return;
+
+            try {
+                const response = await fetch('/api/v1/key/stats', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('apiKeyStats').innerHTML = `
+                        <div class="api-key-stat">
+                            <span class="api-key-stat-value">${data.stats.remaining_today}</span>
+                            <span class="api-key-stat-label">Remaining today</span>
+                        </div>
+                        <div class="api-key-stat">
+                            <span class="api-key-stat-value">${data.stats.used_today}</span>
+                            <span class="api-key-stat-label">Used today</span>
+                        </div>
+                        <div class="api-key-stat">
+                            <span class="api-key-stat-value">${data.stats.total_merges}</span>
+                            <span class="api-key-stat-label">Total merges</span>
+                        </div>
+                    `;
+                } else {
+                    // Key might be invalid, clear it
+                    if (data.error === 'API key not found') {
+                        localStorage.removeItem(API_KEY_STORAGE);
+                        document.getElementById('apiKeyDisplay').classList.add('hidden');
+                        document.getElementById('getKeyBtn').textContent = 'Get your API key';
+                        document.getElementById('getKeyBtn').classList.remove('hidden');
+                        document.getElementById('checkKeyBtn').classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking stats:', error);
+            }
+        }
+    </script>
+</body>
+</html>

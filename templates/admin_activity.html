@@ -205,6 +205,8 @@
                             <div class="activity-action {{ log.action }}">
                                 {% if log.action == 'merge' %}
                                     Fusion de sous-titres
+                                {% elif log.action == 'api_merge' %}
+                                    API - Fusion
                                 {% elif log.action == 'email_signup' %}
                                     Inscription email
                                 {% else %}
@@ -212,7 +214,7 @@
                                 {% endif %}
                             </div>
                             <div class="activity-details">
-                                {% if log.action == 'merge' %}
+                                {% if log.action == 'merge' or log.action == 'api_merge' %}
                                     {{ log.details.cue_count }} sous-titres (mode: {{ log.details.mode }})
                                 {% elif log.action == 'email_signup' %}
                                     {{ log.details.email }}

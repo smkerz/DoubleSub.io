@@ -23,7 +23,8 @@ class SubtitleCue:
 class SubtitleMerger:
     """Fusionne deux fichiers SRT en dual-langue"""
 
-    def merge(self, srt1_path, srt2_path, output_path, mode='all', tolerance_ms=700):
+    def merge(self, srt1_path, srt2_path, output_path, mode='all', tolerance_ms=700,
+              offset1_ms=0, offset2_ms=0, color1=None, color2=None):
         """
         Fusionne deux fichiers SRT
 
@@ -33,14 +34,35 @@ class SubtitleMerger:
             output_path: Chemin du fichier de sortie
             mode: 'all', 'overlapping', ou 'primary'
             tolerance_ms: Tolérance pour détecter les chevauchements (ms)
+            offset1_ms: Décalage en ms pour le premier SRT
+            offset2_ms: Décalage en ms pour le deuxième SRT
+            color1: Couleur HTML pour le premier SRT (ex: '#FFFFFF')
+            color2: Couleur HTML pour le deuxième SRT (ex: '#FFFF00')
 
         Returns:
-            dict avec 'success', 'cue_count', optionnellement 'error'
+            dict avec 'success', 'cue_count', 'preview', optionnellement 'error'
         """
         try:
             # Charger les sous-titres
             cues1 = self.parse_srt(srt1_path)
             cues2 = self.parse_srt(srt2_path)
+
+            # Appliquer les offsets
+            if offset1_ms != 0:
+                offset1 = timedelta(milliseconds=offset1_ms)
+                for cue in cues1:
+                    cue.start = max(timedelta(0), cue.start + offset1)
+                    cue.end = max(timedelta(0), cue.end + offset1)
+
+            if offset2_ms != 0:
+                offset2 = timedelta(milliseconds=offset2_ms)
+                for cue in cues2:
+                    cue.start = max(timedelta(0), cue.start + offset2)
+                    cue.end = max(timedelta(0), cue.end + offset2)
+
+            # Stocker les couleurs pour l'utilisation dans merge
+            self.color1 = color1
+            self.color2 = color2
 
             if not cues1 or not cues2:
                 return {
@@ -59,9 +81,20 @@ class SubtitleMerger:
             # Écrire le résultat
             self.write_srt(merged, output_path)
 
+            # Générer un aperçu (10 premiers sous-titres)
+            preview = []
+            for cue in merged[:10]:
+                preview.append({
+                    'index': cue.index,
+                    'start': self.format_timestamp(cue.start),
+                    'end': self.format_timestamp(cue.end),
+                    'text': cue.text
+                })
+
             return {
                 'success': True,
-                'cue_count': len(merged)
+                'cue_count': len(merged),
+                'preview': preview
             }
 
         except Exception as e:
@@ -126,6 +159,12 @@ class SubtitleMerger:
 
         return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
+    def apply_color(self, text, color):
+        """Applique une couleur HTML au texte (format SRT avec balises font)"""
+        if color:
+            return f'<font color="{color}">{text}</font>'
+        return text
+
     def merge_all(self, cues1, cues2, tolerance_ms):
         """Fusionne tous les sous-titres"""
         tolerance = timedelta(milliseconds=tolerance_ms)
@@ -141,29 +180,35 @@ class SubtitleMerger:
                 overlap = self.check_overlap(c1, c2, tolerance)
 
                 if overlap:
-                    # Fusionner
+                    # Fusionner avec couleurs
+                    text1 = self.apply_color(c1.text, self.color1)
+                    text2 = self.apply_color(c2.text, self.color2)
                     merged_cue = SubtitleCue(
                         len(merged) + 1,
                         min(c1.start, c2.start),
                         max(c1.end, c2.end),
-                        f"{c1.text}\n{c2.text}"
+                        f"{text1}\n{text2}"
                     )
                     merged.append(merged_cue)
                     i += 1
                     j += 1
                 elif c1.start < c2.start:
                     # c1 vient avant
-                    merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, c1.text))
+                    text1 = self.apply_color(c1.text, self.color1)
+                    merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, text1))
                     i += 1
                 else:
                     # c2 vient avant
-                    merged.append(SubtitleCue(len(merged) + 1, c2.start, c2.end, c2.text))
+                    text2 = self.apply_color(c2.text, self.color2)
+                    merged.append(SubtitleCue(len(merged) + 1, c2.start, c2.end, text2))
                     j += 1
             elif c1:
-                merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, c1.text))
+                text1 = self.apply_color(c1.text, self.color1)
+                merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, text1))
                 i += 1
             elif c2:
-                merged.append(SubtitleCue(len(merged) + 1, c2.start, c2.end, c2.text))
+                text2 = self.apply_color(c2.text, self.color2)
+                merged.append(SubtitleCue(len(merged) + 1, c2.start, c2.end, text2))
                 j += 1
 
         return merged
@@ -176,11 +221,13 @@ class SubtitleMerger:
         for c1 in cues1:
             for c2 in cues2:
                 if self.check_overlap(c1, c2, tolerance):
+                    text1 = self.apply_color(c1.text, self.color1)
+                    text2 = self.apply_color(c2.text, self.color2)
                     merged_cue = SubtitleCue(
                         len(merged) + 1,
                         min(c1.start, c2.start),
                         max(c1.end, c2.end),
-                        f"{c1.text}\n{c2.text}"
+                        f"{text1}\n{text2}"
                     )
                     merged.append(merged_cue)
                     break
@@ -197,11 +244,13 @@ class SubtitleMerger:
             matched = False
             for c2 in cues2:
                 if self.check_overlap(c1, c2, tolerance):
+                    text1 = self.apply_color(c1.text, self.color1)
+                    text2 = self.apply_color(c2.text, self.color2)
                     merged_cue = SubtitleCue(
                         len(merged) + 1,
                         c1.start,
                         c1.end,
-                        f"{c1.text}\n{c2.text}"
+                        f"{text1}\n{text2}"
                     )
                     merged.append(merged_cue)
                     matched = True
@@ -209,7 +258,8 @@ class SubtitleMerger:
 
             if not matched:
                 # Pas de match, garder juste c1
-                merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, c1.text))
+                text1 = self.apply_color(c1.text, self.color1)
+                merged.append(SubtitleCue(len(merged) + 1, c1.start, c1.end, text1))
 
         return merged
 

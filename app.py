@@ -72,6 +72,10 @@ def save_admin_credentials(username, password):
 
 from utils.subtitle_merger import SubtitleMerger
 from utils.ffmpeg_helper import FFmpegHelper
+from utils.api_keys import (
+    create_api_key, validate_api_key, record_usage, get_key_stats,
+    get_all_keys_stats, toggle_key_status, require_api_key
+)
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -131,6 +135,10 @@ def merge_subtitles():
     try:
         mode = request.form.get('mode', 'all')
         tolerance = int(request.form.get('tolerance', 700))
+        offset1 = int(request.form.get('offset1', 0))
+        offset2 = int(request.form.get('offset2', 0))
+        color1 = request.form.get('color1', '') or None
+        color2 = request.form.get('color2', '') or None
 
         # Mode vidéo ou mode SRT
         if 'video' in request.files:
@@ -184,7 +192,11 @@ def merge_subtitles():
             srt2_path,
             output_path,
             mode=mode,
-            tolerance_ms=tolerance
+            tolerance_ms=tolerance,
+            offset1_ms=offset1,
+            offset2_ms=offset2,
+            color1=color1,
+            color2=color2
         )
 
         if result['success']:
@@ -209,7 +221,8 @@ def merge_subtitles():
                 'success': True,
                 'message': 'Fusion réussie!',
                 'output_file': output_filename,
-                'cue_count': result['cue_count']
+                'cue_count': result['cue_count'],
+                'preview': result.get('preview', [])
             })
         else:
             return jsonify({
@@ -247,6 +260,272 @@ def download_file(filename):
 def health():
     """Health check endpoint"""
     return jsonify({'status': 'ok', 'service': 'doublesub.io'})
+
+
+# ==================== PUBLIC API v1 ====================
+
+@app.route('/api/v1/merge', methods=['POST'])
+@require_api_key
+def api_v1_merge():
+    """
+    Public API endpoint for merging subtitles.
+
+    Request (multipart/form-data):
+        - srt1: First SRT file (required)
+        - srt2: Second SRT file (required)
+        - api_key: API key (required, or use X-API-Key header)
+        - mode: Merge mode - 'all', 'overlapping', or 'primary' (optional, default: 'all')
+        - tolerance: Timing tolerance in ms (optional, default: 700)
+        - offset1: Time offset for first subtitle in ms (optional, default: 0)
+        - offset2: Time offset for second subtitle in ms (optional, default: 0)
+        - color1: HTML color for first subtitle, e.g. '#FFFFFF' (optional)
+        - color2: HTML color for second subtitle, e.g. '#FFFF00' (optional)
+        - format: Response format - 'file' or 'json' (optional, default: 'file')
+
+    Response:
+        - If format='file': Returns the merged SRT file directly
+        - If format='json': Returns JSON with download URL and metadata
+
+    Example curl:
+        curl -X POST https://doublesub.io/api/v1/merge \\
+            -H "X-API-Key: dsub_your_key_here" \\
+            -F "srt1=@english.srt" \\
+            -F "srt2=@french.srt" \\
+            -F "mode=all" \\
+            --output merged.srt
+    """
+    try:
+        # Validate required files
+        if 'srt1' not in request.files or 'srt2' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': 'Two SRT files required (srt1 and srt2)'
+            }), 400
+
+        srt1_file = request.files['srt1']
+        srt2_file = request.files['srt2']
+
+        if srt1_file.filename == '' or srt2_file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': 'Empty filename'
+            }), 400
+
+        # Get parameters
+        mode = request.form.get('mode', 'all')
+        if mode not in ['all', 'overlapping', 'primary']:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid mode. Use: all, overlapping, or primary'
+            }), 400
+
+        try:
+            tolerance = int(request.form.get('tolerance', 700))
+            offset1 = int(request.form.get('offset1', 0))
+            offset2 = int(request.form.get('offset2', 0))
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid numeric parameter'
+            }), 400
+
+        color1 = request.form.get('color1', '') or None
+        color2 = request.form.get('color2', '') or None
+        response_format = request.form.get('format', 'file')
+
+        # Save uploaded files
+        srt1_filename = secure_filename(srt1_file.filename)
+        srt2_filename = secure_filename(srt2_file.filename)
+
+        srt1_path = os.path.join(app.config['UPLOAD_FOLDER'], 'api_' + srt1_filename)
+        srt2_path = os.path.join(app.config['UPLOAD_FOLDER'], 'api_' + srt2_filename)
+
+        srt1_file.save(srt1_path)
+        srt2_file.save(srt2_path)
+
+        # Merge
+        output_filename = 'api_merged_' + str(hash(os.urandom(16))) + '.srt'
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+
+        result = subtitle_merger.merge(
+            srt1_path,
+            srt2_path,
+            output_path,
+            mode=mode,
+            tolerance_ms=tolerance,
+            offset1_ms=offset1,
+            offset2_ms=offset2,
+            color1=color1,
+            color2=color2
+        )
+
+        if not result['success']:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Merge failed')
+            }), 500
+
+        # Record API key usage (rate limiting)
+        record_usage(request.api_key)
+
+        # Log API usage
+        log_activity('api_merge', {
+            'cue_count': result['cue_count'],
+            'mode': mode,
+            'file1': srt1_filename,
+            'file2': srt2_filename,
+            'remaining_quota': request.api_remaining - 1
+        }, request.remote_addr)
+
+        # Return based on format
+        if response_format == 'json':
+            return jsonify({
+                'success': True,
+                'cue_count': result['cue_count'],
+                'download_url': f'/download/{output_filename}',
+                'preview': result.get('preview', [])[:5]  # First 5 subtitles
+            })
+        else:
+            # Return file directly
+            return send_file(
+                output_path,
+                as_attachment=True,
+                download_name='doublesub_merged.srt',
+                mimetype='text/plain'
+            )
+
+    except Exception as e:
+        app.logger.error(f"API merge error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/v1/docs')
+def api_v1_docs():
+    """API documentation page"""
+    return render_template('api_docs.html')
+
+
+# ==================== API KEY MANAGEMENT ====================
+
+@app.route('/api/v1/key', methods=['POST'])
+def api_create_key():
+    """
+    Cree une nouvelle cle API anonyme.
+
+    Response:
+        {
+            "success": true,
+            "api_key": "dsub_xxxxxxxxxxxx",
+            "daily_limit": 50,
+            "message": "Store this key - it cannot be recovered!"
+        }
+    """
+    try:
+        ip_address = request.remote_addr
+
+        result = create_api_key(ip_address)
+
+        log_activity('api_key_created', {
+            'ip': ip_address
+        }, ip_address)
+
+        return jsonify({
+            'success': True,
+            'api_key': result['api_key'],
+            'daily_limit': result['daily_limit'],
+            'message': 'Store this key safely - it cannot be recovered if lost!'
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error creating API key: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/v1/key/validate', methods=['POST'])
+def api_validate_key():
+    """
+    Valide une cle API et retourne son statut.
+
+    Request:
+        Header: X-API-Key: dsub_xxx
+        OR Body: {"api_key": "dsub_xxx"}
+
+    Response:
+        {
+            "valid": true,
+            "remaining": 45,
+            "daily_limit": 50
+        }
+    """
+    try:
+        api_key = request.headers.get('X-API-Key') or request.json.get('api_key') if request.is_json else None
+
+        if not api_key:
+            return jsonify({
+                'valid': False,
+                'error': 'API key required'
+            }), 400
+
+        validation = validate_api_key(api_key)
+
+        return jsonify({
+            'valid': validation['valid'],
+            'remaining': validation['remaining'],
+            'daily_limit': 50,
+            'error': validation.get('error')
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error validating API key: {str(e)}")
+        return jsonify({'valid': False, 'error': str(e)}), 500
+
+
+@app.route('/api/v1/key/stats', methods=['GET'])
+def api_key_stats():
+    """
+    Retourne les statistiques d'utilisation d'une cle API.
+
+    Request:
+        Header: X-API-Key: dsub_xxx
+
+    Response:
+        {
+            "success": true,
+            "stats": {
+                "total_merges": 123,
+                "used_today": 5,
+                "remaining_today": 45,
+                "daily_limit": 50,
+                "created": "2024-01-15T10:30:00",
+                "last_used": "2024-01-15T14:22:00"
+            }
+        }
+    """
+    try:
+        api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'API key required'
+            }), 400
+
+        stats = get_key_stats(api_key)
+
+        if not stats:
+            return jsonify({
+                'success': False,
+                'error': 'API key not found'
+            }), 404
+
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error getting key stats: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/notify', methods=['POST'])
@@ -393,6 +672,39 @@ def admin_view(filename):
         return render_template('admin_view_file.html', filename=filename, content=content)
     except Exception as e:
         return f"Erreur: {str(e)}", 500
+
+
+@app.route('/admin/api-keys')
+def admin_api_keys():
+    """Page de gestion des cles API"""
+    if not session.get('admin_logged_in', False):
+        return redirect(url_for('admin'))
+
+    keys_stats = get_all_keys_stats()
+    total_keys = len(keys_stats)
+    active_keys = sum(1 for k in keys_stats if k.get('active', True))
+    total_merges = sum(k.get('total_merges', 0) for k in keys_stats)
+
+    return render_template('admin_api_keys.html',
+                         keys=keys_stats,
+                         total_keys=total_keys,
+                         active_keys=active_keys,
+                         total_merges=total_merges)
+
+
+@app.route('/admin/api-keys/toggle/<key_hash_prefix>', methods=['POST'])
+def admin_toggle_key(key_hash_prefix):
+    """Active/desactive une cle API"""
+    if not session.get('admin_logged_in', False):
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
+
+    success = toggle_key_status(key_hash_prefix)
+
+    if success:
+        log_activity('api_key_toggled', {'key_prefix': key_hash_prefix}, request.remote_addr)
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': 'Key not found'}), 404
 
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
