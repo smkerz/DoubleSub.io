@@ -11,7 +11,8 @@ from functools import wraps
 from flask import request, jsonify
 
 # Fichier de stockage des cles API
-API_KEYS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'api_keys.json')
+DATA_DIR = os.environ.get('DATA_DIR', os.path.dirname(os.path.dirname(__file__)))
+API_KEYS_FILE = os.path.join(DATA_DIR, 'api_keys.json')
 
 # Configuration du rate limiting
 DAILY_LIMIT = 50  # Nombre max de fusions par jour

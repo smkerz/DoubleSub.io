@@ -45,6 +45,9 @@ class Config:
     # Securite
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
+    # Data directory for persistent files (credentials, logs, api keys, emails)
+    DATA_DIR = os.environ.get('DATA_DIR', os.path.dirname(__file__))
+
     # Upload
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024 * 1024  # 5 GB max

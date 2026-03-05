@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+.env
+venv/
+uploads/
+*.log
+.git
+.gitignore
+*.md
+ffmpeg/
+run_local.bat
+run_local.sh
+admin_credentials.json
+activity_log.json
+emails_notify.txt
+api_keys.json
+nul

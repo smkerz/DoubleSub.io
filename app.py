@@ -10,8 +10,12 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 from config import Config
 
+# Data directory for persistent files
+DATA_DIR = os.environ.get('DATA_DIR', os.path.dirname(__file__))
+os.makedirs(DATA_DIR, exist_ok=True)
+
 # Activity log file
-ACTIVITY_LOG_FILE = os.path.join(os.path.dirname(__file__), 'activity_log.json')
+ACTIVITY_LOG_FILE = os.path.join(DATA_DIR, 'activity_log.json')
 
 
 def log_activity(action, details=None, ip=None):
@@ -49,7 +53,7 @@ def get_activity_logs(limit=100):
 # Admin credentials (default, will be overridden by file if exists)
 DEFAULT_ADMIN_USERNAME = 'apps@mcdavidian'
 DEFAULT_ADMIN_PASSWORD = 'TheManny'
-CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'admin_credentials.json')
+CREDENTIALS_FILE = os.path.join(DATA_DIR, 'admin_credentials.json')
 
 
 def get_admin_credentials():
@@ -539,7 +543,7 @@ def notify_signup():
             return jsonify({'success': False, 'error': 'Email invalide'}), 400
 
         # Sauvegarder dans un fichier simple
-        emails_file = os.path.join(os.path.dirname(__file__), 'emails_notify.txt')
+        emails_file = os.path.join(DATA_DIR, 'emails_notify.txt')
 
         with open(emails_file, 'a', encoding='utf-8') as f:
             f.write(email + '\n')
@@ -560,7 +564,7 @@ def notify_signup():
 
 def get_emails():
     """Recupere la liste des emails"""
-    emails_file = os.path.join(os.path.dirname(__file__), 'emails_notify.txt')
+    emails_file = os.path.join(DATA_DIR, 'emails_notify.txt')
     if os.path.exists(emails_file):
         with open(emails_file, 'r', encoding='utf-8') as f:
             emails = [line.strip() for line in f.readlines() if line.strip()]
